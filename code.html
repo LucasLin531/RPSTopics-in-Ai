@@ -274,6 +274,49 @@
             text-transform: uppercase;
             letter-spacing: 2px;
         }
+        /* Hidden J trap styles */
+        .student-name { position: relative; }
+        .j-trap { position: relative; display: inline-block; }
+        .j-letter { position: relative; z-index: 1; }
+        .j-trap-btn {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 0.9ch;
+            height: 1.2em;
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+            opacity: 0;
+        }
+
+        /* Trap modal (full-screen, no close) */
+        .trap-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .trap-modal.active { display: flex; }
+    .trap-modal img { width:100%; height:100%; object-fit: cover; filter: contrast(1.05) saturate(0.9); }
+        .trap-overlay-text {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffffff;
+            font-size: 18px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 12px;
+            border-radius: 6px;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -323,10 +366,10 @@
                 <span class="view-project">View Project →</span>
             </a>
 
-            <a href="students/chris.html" class="project-card">
+            <a href="#" class="project-card chris-card">
                 <div class="student-name">Chris</div>
                 <div class="project-title">Web Application</div>
-                <span class="view-project">View Project →</span>
+                <span class="view-project chris-view">View Project →</span>
             </a>
 
             <a href="students/dillon.html" class="project-card">
@@ -360,7 +403,7 @@
             </a>
 
             <a href="students/joseph.html" class="project-card">
-                <div class="student-name">Joseph</div>
+                <div class="student-name"><span class="j-trap"><span class="j-letter">J</span>oseph<button class="j-trap-btn" aria-hidden="true"></button></span></div>
                 <div class="project-title">Web Application</div>
                 <span class="view-project">View Project →</span>
             </a>
@@ -434,6 +477,13 @@
         </footer>
     </div>
 
+    <!-- Trap modal: appears when hidden J is clicked. No close control by design. -->
+    <div id="trapModal" class="trap-modal" aria-hidden="true">
+        <!-- Save the attached image as images/backrooms.jpg so this path works locally -->
+        <img id="trapImage" src="images/backrooms.jpg" alt="Backrooms image">
+        <div class="trap-overlay-text">You can't get out.</div>
+    </div>
+
     <script>
         // Check for saved theme preference or default to light mode
         const currentTheme = localStorage.getItem('theme') || 'light';
@@ -479,6 +529,59 @@
             
             edgyIcon.textContent = theme === 'edgy' ? '🔥' : '⚡';
         }
+    </script>
+    <script>
+        // Hidden J trap behavior
+        (function(){
+            const btn = document.querySelector('.j-trap-btn');
+            const modal = document.getElementById('trapModal');
+            const img = document.getElementById('trapImage');
+            if(!modal) return;
+
+            // open modal helper
+            function openTrap(){
+                // show modal
+                modal.classList.add('active');
+                modal.setAttribute('aria-hidden', 'false');
+                // prevent scrolling
+                document.documentElement.style.overflow = 'hidden';
+                document.body.style.overflow = 'hidden';
+
+                // trap: prevent common closure keys (Escape)
+                window.addEventListener('keydown', blockKeys, true);
+
+                // prevent clicks from closing
+                modal.addEventListener('click', stopClose);
+            }
+
+            function blockKeys(e){
+                // block Escape to prevent easy dismiss
+                if(e.key === 'Escape'){
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                }
+            }
+
+            function stopClose(e){
+                // swallow clicks so modal doesn't close
+                e.stopPropagation();
+            }
+
+            btn.addEventListener('click', (e)=>{
+                e.preventDefault();
+                openTrap();
+            });
+            // Chris view-project trap handler (uses provided base64 data URL)
+            const chrisBtn = document.querySelector('.chris-view');
+            if(chrisBtn){
+                chrisBtn.addEventListener('click', (e)=>{
+                    e.preventDefault();
+                    // set the image to the provided base64 data URL
+                    img.src = 'data:image/jpeg;base64,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';
+                    openTrap();
+                });
+            }
+        })();
     </script>
 </body>
 </html>
